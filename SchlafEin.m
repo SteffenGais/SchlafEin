@@ -1,7 +1,7 @@
 % SchlafEin.m 
 % Simple help for sleep scoring
-% 16.09.2021 Version 0.946beta Steffen Gais
-% 0.946 - initial version for GitHub
+% 16.09.2021 Steffen Gais
+% version 0.947 - initial version for GitHub
 
 function SchlafEin
     global SED
@@ -374,7 +374,7 @@ function SE_create_window
     SED.objects.ctrlbuttons(3) = uicontrol('Style','pushbutton', 'FontUnits', 'normalized', 'FontSize', 0.5, 'String','HY', 'TooltipString', 'Hypnogram', ... 
         'Units','normalized', 'Position',[0.94 0.95 0.05 0.05]);
     SED.objects.ctrlbuttons(3).Callback = @SE_ctrlbuttonpush;    
-    SED.objects.ctrlbuttons(4) = uicontrol('Style','togglebutton', 'FontUnits', 'normalized', 'FontSize', 0.5, 'String','L', 'TooltipString', 'Toggle 75µV Line', ... 
+    SED.objects.ctrlbuttons(4) = uicontrol('Style','togglebutton', 'FontUnits', 'normalized', 'FontSize', 0.5, 'String','L', 'TooltipString', 'Toggle 75ÂµV Line', ... 
         'Units','normalized', 'Position',[0.88 0.95 0.05 0.05]);
     SED.objects.ctrlbuttons(4).Callback = @SE_ctrlbuttonpush;    
     SED.objects.ctrlbuttons(5) = uicontrol('Style','togglebutton', 'FontUnits', 'normalized', 'FontSize', 0.5, 'String','Z', 'TooltipString', 'Toggle Zoom', ... 
@@ -1310,20 +1310,36 @@ end
 function SE_update
     global SEversion
     try
-        v = webread('https://gaislab.info/SchlafEin/version.txt');
-        if SEversion < str2double(v)
+        lines = splitlines(webread('https://raw.githubusercontent.com/SteffenGais/SchlafEin/main/SchlafEin.m'));
+        v = 'notfound';
+        for i = 1:length(lines)
+            line = strip(lines{i});
+            if isempty(line) || line(1)~='%'
+                continue
+            end
+            if contains(lower(line), "version")
+                v = regexp(line, '\d+\.?\d*', 'match');
+                v = v{end};
+                break
+            end
+        end
+        if  strcmp(v, 'notfound')
+            disp('Error while reading version number, no version number found. Check manually at https://github.com/SteffenGais/SchlafEin')
+        elseif SEversion < str2double(v)
             a = input('There is a new version. Update (Y/N)? ','s');
             if lower(a(1))=='y'
-                up = webread('https://gaislab.info/SchlafEin/SchlafEin.m',weboptions('ContentType','text'));
+                up = webread('https://raw.githubusercontent.com/SteffenGais/SchlafEin/main/SchlafEin.m',weboptions('ContentType','text'));
                 fn = which('SchlafEin.m');
                 copyfile(fn,[fn(1:end-2) '_' datestr(now,30) '.m']);
                 f=fopen(fn,'w');
                 fprintf(f,'%s',up);
                 fclose(f);
             end
+        else
+            disp(['SchlafEin [v', num2str(SEversion), '] (no updates found, you are using the most recent version).'])
         end
-    catch
-        fprintf('Warning. Could not update.');
+    catch error
+        disp(['Warning. Could not update: ', error.message]);
     end
 end
 
